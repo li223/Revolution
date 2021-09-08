@@ -12,6 +12,6 @@ namespace Revolution.Objects.WebSocket.Response
         public IEnumerable<Server.Server> Servers { get; private set; }
 
         [JsonProperty("channels")]
-        public IEnumerable<Channel.Channel> Channels { get; private set; }
+        public IEnumerable<Channel.ServerChannel> Channels { get; private set; }
     }
 }

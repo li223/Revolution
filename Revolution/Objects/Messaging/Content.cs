@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Revolution.Objects.Message
+namespace Revolution.Objects.Messaging
 {
     public struct Content
     {

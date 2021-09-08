@@ -26,10 +26,13 @@ namespace Revolution.Objects.ModelActions
         [JsonProperty("avatar")]
         public string Avatar { get; set; }
 
+        [JsonProperty("remove")]
+        internal string RemoveString { get => Remove.ToString(); }
+
         /// <summary>
         /// Enum which determines what to remove when updating the user
         /// </summary>
-        [JsonProperty("remove")]
+        [JsonIgnore]
         public RemoveEnum Remove { get; set; } = RemoveEnum.None;
     }
 }

@@ -3,7 +3,7 @@ using Revolution.Objects.Shared;
 using System;
 using System.Collections.Generic;
 
-namespace Revolution.Objects.Message
+namespace Revolution.Objects.Messaging
 {
     /// <summary>
     /// Represents a Revolt User Message

@@ -1,5 +1,5 @@
 ﻿using Revolution.Objects.Channel;
-using Revolution.Objects.Message;
+using Revolution.Objects.Messaging;
 using Revolution.Objects.Server;
 using Revolution.Objects.User;
 using System;
@@ -17,9 +17,10 @@ namespace Revolution.Client
 
         internal RestClient Rest { get; private set; }
 
-        public delegate Task ClientReadyArgs(IEnumerable<User> users, IEnumerable<Server> servers, IEnumerable<Channel> channels);
+        public delegate Task ClientReadyArgs(IEnumerable<User> users, IEnumerable<Server> servers, IEnumerable<ServerChannel> channels);
         public delegate Task ClientErrorArgs(string message);
         public delegate Task MessageReceivedArgs(IEnumerable<Message> messages);
+        public delegate Task NoArgs();
 
         public RevoltClientBase(string token)
         {
@@ -27,9 +28,10 @@ namespace Revolution.Client
             Rest = new RestClient(_baseUrl, token);
         }
 
+        [Obsolete("User Login is currently not supported")]
         public RevoltClientBase(string email, string password)
         {
-            throw new NotImplementedException("User login is currently not supported");
+            throw new NotSupportedException("User login is currently not supported");
             Rest = new RestClient(_baseUrl, email, password);
             var sessionData = Rest.GetSessionData();
             this.SessionToken = sessionData.SessionToken;

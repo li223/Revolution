@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Revolution.Objects.Channel;
+using Revolution.Objects.ModelActions;
 using Revolution.Objects.Server;
 using Revolution.Objects.Shared;
 using Revolution.Objects.User;
@@ -7,7 +8,6 @@ using Revolution.Objects.WebSocket;
 using Revolution.Objects.WebSocket.Response;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using WebSocket4Net;
 
@@ -18,50 +18,42 @@ namespace Revolution.Client
         public event ClientReadyArgs Ready;
         public event ClientErrorArgs ClientErrored;
         public event MessageReceivedArgs MessageReceived;
+        public event NoArgs Pinged;
+        internal WebSocket Socket;
 
         public IEnumerable<User> AvaliableUsers { get; internal set; }
 
         public IEnumerable<Server> AvaliableServers { get; internal set; }
 
-        public IEnumerable<Channel> AvaliableChannels { get; internal set; }
+        public IEnumerable<ServerChannel> AvaliableChannels { get; internal set; }
 
         private LoginType LoginType { get; set; }
 
         public RevoltClient(string token) : base(token)
             => LoginType = LoginType.Bot;
 
+        [Obsolete("User Login is currently not supported")]
         public RevoltClient(string email, string password) : base(email, password)
             => LoginType = LoginType.User;
+
+        public async Task<bool> UpdateSelfAsync(Action<SelfUpdateModel> action)
+            => await this.Rest.UpdateSelfAsync(action).ConfigureAwait(false);
 
         public async Task ConnectAsync()
         {
             var data = await this.Rest.GetServerDetailsAsync();
-            var websocket = new WebSocket(data.WebSocketUrl);
+            this.Socket = new WebSocket(data.WebSocketUrl);
 
-            websocket.DataReceived += this.Websocket_DataReceived;
-            websocket.Closed += this.Websocket_Closed;
-            websocket.Opened += this.Websocket_Opened;
-            websocket.Error += this.Websocket_Error;
-            websocket.EnableAutoSendPing = true;
+            this.Socket.Closed += this.Websocket_Closed;
+            this.Socket.Opened += this.Websocket_Opened;
+            this.Socket.Error += this.Websocket_Error;
+            this.Socket.MessageReceived += this.Socket_MessageReceived;
+            this.Socket.EnableAutoSendPing = true;
 
-            await websocket.OpenAsync();
-
-            if (this.LoginType == LoginType.Bot)
-            {
-                websocket.Send(JsonConvert.SerializeObject(new AuthenticateBot()
-                {
-                    Token = this.BotToken
-                }));
-            }
-            else
-            {
-                websocket.Send(JsonConvert.SerializeObject(new AuthenticateUser()
-                {
-                    SessionToken = this.SessionToken,
-                    UserId = this.UserId
-                }));
-            }
+            await this.Socket.OpenAsync();
         }
+
+        public void Ping() => this.Socket.Send(@"{{""type"": ""Ping"",""time"": 0}}");
 
         private void Websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
@@ -77,6 +69,19 @@ namespace Revolution.Client
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine($"[LOG] WebSocket opened - {DateTime.Now}");
             Console.ForegroundColor = ConsoleColor.White;
+
+            if (this.LoginType == LoginType.Bot)
+                this.Socket.Send(JsonConvert.SerializeObject(new AuthenticateBot()
+                {
+                    Token = this.BotToken
+                }));
+
+            else
+                this.Socket.Send(JsonConvert.SerializeObject(new AuthenticateUser()
+                {
+                    SessionToken = this.SessionToken,
+                    UserId = this.UserId
+                }));
         }
 
         private void Websocket_Closed(object sender, EventArgs e)
@@ -86,33 +91,42 @@ namespace Revolution.Client
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        private void Websocket_DataReceived(object sender, DataReceivedEventArgs e)
+        private void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            var jsonData = Encoding.Unicode.GetString(e.Data);
-            var baseType = JsonConvert.DeserializeObject<SocketResponse>(jsonData);
-
-            Console.WriteLine($"[LOG] WebSocket Data Received: {jsonData} - {DateTime.Now}");
+            var baseType = JsonConvert.DeserializeObject<SocketResponse>(e.Message);
 
             switch (baseType.Type)
             {
                 case "Ready":
-                    var readyPayload = JsonConvert.DeserializeObject<ReadyPayload>(jsonData);
+                    var readyPayload = JsonConvert.DeserializeObject<ReadyPayload>(e.Message);
                     this.Ready?.Invoke(readyPayload.Users, readyPayload.Servers, readyPayload.Channels);
                     this.AvaliableUsers = readyPayload.Users;
                     this.AvaliableServers = readyPayload.Servers;
                     this.AvaliableChannels = readyPayload.Channels;
                     break;
 
+                case "Pong":
+                    this.Pinged?.Invoke();
+                    break;
+
+                case "Authenticated":
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine($"[LOG] Authenticated Event Received - {DateTime.Now}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    break;
+
                 case "Message":
-                    var messagePayload = JsonConvert.DeserializeObject<MessagePayload>(jsonData);
+                    var messagePayload = JsonConvert.DeserializeObject<MessagePayload>(e.Message);
                     this.MessageReceived?.Invoke(messagePayload.Messages);
                     break;
 
                 default:
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine($"[LOG] Unknown Event: {baseType.Type} - {DateTime.Now}");
+                    Console.ForegroundColor = ConsoleColor.White;
                     break;
             }
         }
+
     }
 }
