@@ -134,7 +134,7 @@ namespace Revolution.Client
                     Description = update.Description,
                     IconId = update.IconId,
                     Name = update.Name,
-                    Remove = update.Remove?.ToString()
+                    Remove = update.Remove == null || update.Remove == RemoveEnum.None ? null : update.Remove?.ToString()
                 }))
             };
             var response = await HttpClient.SendAsync(request).ConfigureAwait(false);

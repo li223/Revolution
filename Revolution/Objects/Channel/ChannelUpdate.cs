@@ -12,7 +12,7 @@ namespace Revolution.Objects.Channel
         public string Description { get; set; }
 
         [JsonProperty("icon", NullValueHandling = NullValueHandling.Include)]
-        public Ulid? IconId { get; set; }
+        public string IconId { get; set; }
 
         [JsonProperty("remove", NullValueHandling = NullValueHandling.Include)]
         public string Remove { get; set; } = null;

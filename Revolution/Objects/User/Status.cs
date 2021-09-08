@@ -7,6 +7,12 @@ namespace Revolution.Objects.User
     /// </summary>
     public struct Status
     {
+        public Status(string text, UserPresence presence)
+        {
+            Text = text;
+            Presence = presence;
+        }
+
         /// <summary>
         /// The text of the user's status
         /// </summary>
@@ -16,7 +22,10 @@ namespace Revolution.Objects.User
         /// <summary>
         /// Current user status
         /// </summary>
+        [JsonIgnore]
+        public UserPresence Presence { get; private set; }
+
         [JsonProperty("presence")]
-        public string Presence { get; private set; }
+        internal string presence { get => Presence.ToString(); }
     }
 }

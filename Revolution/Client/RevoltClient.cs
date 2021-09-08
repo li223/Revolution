@@ -127,6 +127,5 @@ namespace Revolution.Client
                     break;
             }
         }
-
     }
 }

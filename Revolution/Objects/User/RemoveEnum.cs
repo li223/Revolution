@@ -27,6 +27,16 @@
         /// <summary>
         /// Remove Status text
         /// </summary>
-        StatusText = 4
+        StatusText = 4,
+
+        /// <summary>
+        /// Remove the Channel description
+        /// </summary>
+        Description = 5,
+
+        /// <summary>
+        /// Remove the Channel icon
+        /// </summary>
+        Icon = 6
     }
 }

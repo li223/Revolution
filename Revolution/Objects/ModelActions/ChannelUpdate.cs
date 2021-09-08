@@ -1,6 +1,5 @@
-﻿using Newtonsoft.Json;
-using Revolution.Objects.Channel;
-using System;
+﻿using Revolution.Objects.Channel;
+using Revolution.Objects.User;
 
 namespace Revolution.Objects.ModelActions
 {
@@ -10,8 +9,8 @@ namespace Revolution.Objects.ModelActions
 
         public string Description { get; set; }
 
-        public Ulid? IconId { get; set; }
+        public string IconId { get; set; }
 
-        public Remove? Remove { get; set; }
+        public RemoveEnum? Remove { get; set; }
     }
 }

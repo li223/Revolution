@@ -12,7 +12,7 @@ namespace Revolution.Objects.Shared
         /// ULID of the user's avatar
         /// </summary>
         [JsonProperty("_id")]
-        public Ulid Id { get; private set; }
+        public string Id { get; private set; }
 
         /// <summary>
         /// The tag the current file has 

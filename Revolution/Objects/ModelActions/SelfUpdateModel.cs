@@ -11,28 +11,28 @@ namespace Revolution.Objects.ModelActions
         /// <summary>
         /// The current status for the user
         /// </summary>
-        [JsonProperty("status")]
+        [JsonProperty("status", NullValueHandling = NullValueHandling.Include)]
         public Status Status { get; set; }
 
         /// <summary>
         /// The current profile data for the user
         /// </summary>
-        [JsonProperty("profile")]
+        [JsonProperty("profile", NullValueHandling = NullValueHandling.Include)]
         public Profile Profile { get; set; }
 
         /// <summary>
         /// Avatar Id - Uses Autumn file Id <see cref="https://developers.revolt.chat/api/#tag/User-Information/paths/~1users~1@me/patch"/>
         /// </summary>
-        [JsonProperty("avatar")]
+        [JsonProperty("avatar", NullValueHandling = NullValueHandling.Include)]
         public string Avatar { get; set; }
 
-        [JsonProperty("remove")]
-        internal string RemoveString { get => Remove.ToString(); }
+        [JsonProperty("remove", NullValueHandling = NullValueHandling.Include)]
+        internal string RemoveString { get => Remove == null || Remove == RemoveEnum.None ? null : Remove.ToString(); }
 
         /// <summary>
         /// Enum which determines what to remove when updating the user
         /// </summary>
         [JsonIgnore]
-        public RemoveEnum Remove { get; set; } = RemoveEnum.None;
+        public RemoveEnum? Remove { get; set; }
     }
 }
