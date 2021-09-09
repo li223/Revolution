@@ -9,7 +9,7 @@ namespace Revolution.Objects.Messaging
     public sealed class MessageReply
     {
         /// <summary>
-        /// Id of the Message to reply to
+        /// ULID of the Message to reply to
         /// </summary>
         [JsonProperty("id")]
         public Ulid Id { get; set; }

@@ -1,14 +1,16 @@
 ﻿using Newtonsoft.Json;
+using Revolution.Client;
 using Revolution.Objects.Shared;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Revolution.Objects.Messaging
 {
     /// <summary>
     /// Represents a Revolt User Message
     /// </summary>
-    public class Message
+    public class Message : RestClient
     {
         /// <summary>
         /// ULID of the message
@@ -73,5 +75,18 @@ namespace Revolution.Objects.Messaging
         /// </summary>
         [JsonProperty("replies")]
         public IEnumerable<Ulid> Replies { get; private set; }
+
+        /// <summary>
+        /// Deletes the current message
+        /// </summary>
+        /// <returns>True if the message was deleted; otherwise false</returns>
+        public async Task<bool> DeleteAsync() => await base.DeleteMessageAsync(this.ChannelId, this.Id).ConfigureAwait(false);
+
+        /// <summary>
+        /// Sends an Acknowledgement for the current message
+        /// </summary>
+        /// <returns>True if the message was acknowledged; otherwise false</returns>
+        public async Task<bool> AcknowledgeMessageAsync()
+            => await base.AcknowledgeMessageAsync(this.ChannelId, this.Id).ConfigureAwait(false);
     }
 }

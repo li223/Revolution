@@ -14,7 +14,7 @@ namespace Revolution.Objects.User
         public string Content { get; private set; }
 
         /// <summary>
-        /// Id of the background image - Uses Autumn file Id
+        /// ULID of the background image - Uses Autumn file Id
         /// </summary>
         [JsonProperty("background")]
         public string Background { get; private set; }

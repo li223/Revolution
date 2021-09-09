@@ -1,15 +1,17 @@
 ﻿using Newtonsoft.Json;
+using Revolution.Client;
 using System;
+using System.Threading.Tasks;
 
 namespace Revolution.Objects.Messaging
 {
     /// <summary>
     /// Object representing a new message that has been created
     /// </summary>
-    public class CreatedMessage
+    public class CreatedMessage : RestClient
     {
         /// <summary>
-        /// Id of the message
+        /// ULID of the message
         /// </summary>
         [JsonProperty("_id")]
         public Ulid Id { get; private set; }
@@ -21,7 +23,7 @@ namespace Revolution.Objects.Messaging
         public string Nonce { get; private set; }
 
         /// <summary>
-        /// Id of the Channel the message was sent in
+        /// ULID of the Channel the message was sent in
         /// </summary>
         [JsonProperty("channel")]
         public Ulid ChannelId { get; private set; }
@@ -37,5 +39,18 @@ namespace Revolution.Objects.Messaging
         /// </summary>
         [JsonProperty("content")]
         public string Content { get; private set; }
+
+        /// <summary>
+        /// Deletes the current message
+        /// </summary>
+        /// <returns>True if the message was deleted; otherwise false</returns>
+        public async Task<bool> DeleteAsync() => await base.DeleteMessageAsync(this.ChannelId, this.Id).ConfigureAwait(false);
+
+        /// <summary>
+        /// Sends an Acknowledgement for the current message
+        /// </summary>
+        /// <returns>True if the message was acknowledged; otherwise false</returns>
+        public async Task<bool> AcknowledgeMessageAsync()
+            => await base.AcknowledgeMessageAsync(this.ChannelId, this.Id).ConfigureAwait(false);
     }
 }

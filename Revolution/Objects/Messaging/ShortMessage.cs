@@ -1,7 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Revolution.Objects.Shared;
 using System;
-using System.Collections.Generic;
 
 namespace Revolution.Objects.Messaging
 {
@@ -23,7 +21,7 @@ namespace Revolution.Objects.Messaging
         public Ulid AuthorId { get; private set; }
 
         /// <summary>
-        /// Short Content for the Message
+        /// Content for the Message
         /// </summary>
         [JsonProperty("short")]
         public string Content { get; private set; }

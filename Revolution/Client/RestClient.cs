@@ -2,9 +2,12 @@
 using Revolution.Objects;
 using Revolution.Objects.Channel;
 using Revolution.Objects.Messaging;
+using Revolution.Objects.Messaging.Payloads;
 using Revolution.Objects.ModelActions;
 using Revolution.Objects.User;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -89,7 +92,6 @@ namespace Revolution.Client
             };
 
             var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
-            var content = await response.Content.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
 
@@ -173,6 +175,88 @@ namespace Revolution.Client
                 return null;
             }
             else return JsonConvert.DeserializeObject<CreatedMessage>(content);
+        }
+
+        protected internal async Task<IEnumerable<FetchedMessage>> GetMessagesAsync(Ulid channelId, MessageFetchPayload payload)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseUrl}/channels/{channelId}/messages"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(payload))
+            };
+
+            var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+                return null;
+            }
+            else
+            {
+                var baseData = JsonConvert.DeserializeObject<IEnumerable<FetchedMessageBase>>(content);
+                var newJsonData = JsonConvert.SerializeObject(baseData.Where(x => x.AuthorId != Ulid.Empty));
+                return JsonConvert.DeserializeObject<IEnumerable<FetchedMessage>>(newJsonData);
+            }
+        }
+
+        protected internal async Task<ShortMessage> GetMessageAsync(Ulid channelId, Ulid messageId)
+        {
+            var response = await HttpClient.GetAsync(new Uri($"{_baseUrl}/channels/{channelId}/messages/{messageId}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+                return null;
+            }
+            else return JsonConvert.DeserializeObject<ShortMessage>(content);
+        }
+
+        protected internal async Task<bool> UpdateMessageAsync(Ulid channelId, Ulid messageId, string newContent)
+        {
+            var response = await HttpClient.PatchAsync(new Uri($"{_baseUrl}/channels/{channelId}/messages/{messageId}"), new StringContent($@"{{""content"": ""{newContent}""}}")).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+
+            return response.IsSuccessStatusCode;
+        }
+
+        protected internal async Task<bool> DeleteMessageAsync(Ulid channelId, Ulid messageId)
+        {
+            var response = await HttpClient.DeleteAsync(new Uri($"{_baseUrl}/channels/{channelId}/messages/{messageId}")).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+
+            return response.IsSuccessStatusCode;
+        }
+
+        [Obsolete("Endpoint always returns 404, use Channel#GetMessagesAsync")]
+        protected internal async Task<MessageSearchResult> SearchMessagesAsync(Ulid channelId, MessageSearchPayload payload)
+        {
+            var data = JsonConvert.SerializeObject(payload);
+
+            var response = await HttpClient.PostAsync(new Uri($"{_baseUrl}/channels/{channelId}/messages/search"), new StringContent(data)).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+                return null;
+            }
+            else return JsonConvert.DeserializeObject<MessageSearchResult>(content);
+        }
+
+        protected internal async Task<bool> AcknowledgeMessageAsync(Ulid channelId, Ulid messageId)
+        {
+            var response = await HttpClient.PutAsync(new Uri($"{_baseUrl}/channels/{channelId}/ack/{messageId}"), null).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+                RevoltClientError?.Invoke("Api Returned a non 2xx result");
+
+            return response.IsSuccessStatusCode;
         }
     }
 }
