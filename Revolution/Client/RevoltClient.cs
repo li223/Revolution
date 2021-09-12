@@ -32,7 +32,6 @@ namespace Revolution.Client
         public RevoltClient(string token) : base(token)
             => LoginType = LoginType.Bot;
 
-        [Obsolete("User Login is currently not supported")]
         public RevoltClient(string email, string password) : base(email, password)
             => LoginType = LoginType.User;
 
@@ -53,7 +52,7 @@ namespace Revolution.Client
             await this.Socket.OpenAsync();
         }
 
-        public void Ping() => this.Socket.Send(@"{{""type"": ""Ping"",""time"": 0}}");
+        public void Ping(int waitTime = 0) => this.Socket.Send($@"{{""type"": ""Ping"",""time"": {waitTime}}}");
 
         private void Websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
@@ -70,18 +69,10 @@ namespace Revolution.Client
             Console.WriteLine($"[LOG] WebSocket opened - {DateTime.Now}");
             Console.ForegroundColor = ConsoleColor.White;
 
-            if (this.LoginType == LoginType.Bot)
-                this.Socket.Send(JsonConvert.SerializeObject(new AuthenticateBot()
-                {
-                    Token = this.BotToken
-                }));
-
-            else
-                this.Socket.Send(JsonConvert.SerializeObject(new AuthenticateUser()
-                {
-                    SessionToken = this.SessionToken,
-                    UserId = this.UserId
-                }));
+            this.Socket.Send(JsonConvert.SerializeObject(new Authenticate()
+            {
+                Token = this.Token
+            }));
         }
 
         private void Websocket_Closed(object sender, EventArgs e)

@@ -11,7 +11,13 @@ namespace Revolution.Objects.User
         [JsonProperty("user_id")]
         public Ulid UserId { get; private set; }
 
-        [JsonProperty("session_token")]
-        public string SessionToken { get; private set; }
+        [JsonProperty("token")]
+        public string Token { get; private set; }
+
+        [JsonProperty("name")]
+        public string Name { get; private set; }
+
+        [JsonProperty("subscription")]
+        public string Subscription { get; private set; }
     }
 }

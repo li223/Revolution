@@ -32,6 +32,7 @@ namespace Revolution.Client
             HttpClient.DefaultRequestHeaders.Add("x-bot-token", token);
         }
 
+        [Obsolete("User login is not supported")]
         protected internal RestClient(string baseUrl, string email, string password)
         {
             _baseUrl = baseUrl;
@@ -39,26 +40,37 @@ namespace Revolution.Client
             var loginData = this.LoginAsync(email, password).ConfigureAwait(false).GetAwaiter().GetResult();
             if (loginData != null)
             {
-                HttpClient.DefaultRequestHeaders.Add("x-user-id", loginData.UserId.ToString());
-                HttpClient.DefaultRequestHeaders.Add("x-session-token", loginData.SessionToken);
-
+                HttpClient.DefaultRequestHeaders.Add("x-session-token", loginData.Token);
                 this.SessionData = loginData;
             }
         }
 
         protected internal LoginSessionData GetSessionData() => this.SessionData;
 
+        [Obsolete("User login is not supported")]
         protected internal async Task<LoginSessionData> LoginAsync(string email, string password)
         {
             var serverQuery = await this.GetServerDetailsAsync();
 
-            var response = await HttpClient.PostAsync(new Uri($"{_baseUrl}/auth/login"),
+            /*
+             * I cannot, for the life of me, figure out how to do user login.
+             * The docs went from /auth/login to /session/login. However both return 404.
+             * The actual application then uses /session/auth/login but expects a recaptcha which I obviously dont have.
+             * So if someone smarter than me could figure it out, I'd be most thankful.
+            */
+
+            var loginUri = new Uri($"{_baseUrl}/session/auth/login"); /*new Uri($"{_baseUrl}/session/login");*/ /*new Uri($"{_baseUrl}/auth/login");*/
+
+            var response = await HttpClient.PostAsync(loginUri,
                 new StringContent(JsonConvert.SerializeObject(new
                 {
                     email,
                     password,
-                    Captcha = serverQuery.Features.Captcha.Key
+                    friendly_name = "Revolution C# Library",
+                    //captcha = "",
+                    //challenge = ""
                 })));
+
             var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

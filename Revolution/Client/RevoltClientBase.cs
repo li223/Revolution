@@ -11,8 +11,7 @@ namespace Revolution.Client
     public abstract class RevoltClientBase
     {
         internal const string _baseUrl = "https://api.revolt.chat";
-        public string BotToken { get; private set; }
-        public string SessionToken { get; private set; }
+        public string Token { get; private set; }
         public Ulid UserId { get; private set; }
 
         internal RestClient Rest { get; private set; }
@@ -24,18 +23,18 @@ namespace Revolution.Client
 
         public RevoltClientBase(string token)
         {
-            BotToken = token;
+            Token = token;
             Rest = new RestClient(_baseUrl, token);
         }
 
-        [Obsolete("User Login is currently not supported")]
+        [Obsolete("User login is not supported")]
         public RevoltClientBase(string email, string password)
         {
-            throw new NotSupportedException("User login is currently not supported");
+            throw new NotImplementedException("User login is currently not supported");
+
             Rest = new RestClient(_baseUrl, email, password);
             var sessionData = Rest.GetSessionData();
-            this.SessionToken = sessionData.SessionToken;
-            this.UserId = sessionData.UserId;
+            this.Token = sessionData.Token;
         }
     }
 }
