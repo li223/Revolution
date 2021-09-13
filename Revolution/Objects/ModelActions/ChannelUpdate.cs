@@ -1,5 +1,4 @@
-﻿using Revolution.Objects.Channel;
-using Revolution.Objects.User;
+﻿using Revolution.Objects.User;
 
 namespace Revolution.Objects.ModelActions
 {

@@ -1,7 +1,7 @@
 ﻿using Revolution.Objects.Messaging;
 using System.Collections.Generic;
 
-namespace Revolution.Objects.WebSocket.Response
+namespace Revolution.Objects.WebSocket.Response.Messages
 {
     internal class MessagePayload : SocketResponse
     {

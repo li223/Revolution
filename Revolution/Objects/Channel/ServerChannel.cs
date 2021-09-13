@@ -16,10 +16,10 @@ namespace Revolution.Objects.Channel
     public partial class ServerChannel : RestClient, IChannel
     {
         /// <summary>
-        /// Name of the Server this Channel belongs to
+        /// ULID of the Server this Channel belongs to
         /// </summary>
         [JsonProperty("server")]
-        public string Server { get; private set; }
+        public Ulid ServerId { get; private set; }
 
         /// <summary>
         /// Name of the Channel
@@ -137,7 +137,7 @@ namespace Revolution.Objects.Channel
         /// <param name="nearby">The Id of the message to get other messages nearby from</param>
         /// <param name="includeUsers">Whether or not to include users in the response</param>
         /// <returns><see cref="IEnumerable{T}"/> where <see cref="T"/> is <see cref="ShortMessage"/></returns>
-        public async Task<IEnumerable<FetchedMessage>> GetMessagesAsync(int limit, MessageSort sort = MessageSort.Latest, Ulid? before = null, Ulid? after = null, Ulid? nearby = null, bool includeUsers = false)
+        public async Task<IEnumerable<PartialMessage>> GetMessagesAsync(int limit, MessageSort sort = MessageSort.Latest, Ulid? before = null, Ulid? after = null, Ulid? nearby = null, bool includeUsers = false)
             => await base.GetMessagesAsync(this.Id, new MessageFetchPayload()
             {
                 Limit = limit,

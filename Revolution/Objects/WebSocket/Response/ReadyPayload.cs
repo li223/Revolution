@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Revolution.Objects.Channel;
 using System.Collections.Generic;
 
 namespace Revolution.Objects.WebSocket.Response
@@ -12,6 +13,6 @@ namespace Revolution.Objects.WebSocket.Response
         public IEnumerable<Server.Server> Servers { get; private set; }
 
         [JsonProperty("channels")]
-        public IEnumerable<Channel.ServerChannel> Channels { get; private set; }
+        public IEnumerable<ChannelBase> Channels { get; private set; }
     }
 }

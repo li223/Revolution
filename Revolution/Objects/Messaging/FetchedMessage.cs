@@ -8,7 +8,7 @@ namespace Revolution.Objects.Messaging
     /// <summary>
     /// Represents a Revolt User Message
     /// </summary>
-    public class FetchedMessage : FetchedMessageBase
+    public class PartialMessage : PartialMessageBase
     {
         /// <summary>
         /// Content for the Message
@@ -30,7 +30,7 @@ namespace Revolution.Objects.Messaging
             => await base.AcknowledgeMessageAsync(this.ChannelId, this.Id).ConfigureAwait(false);
     }
 
-    public class FetchedMessageBase : RestClient
+    public class PartialMessageBase : RestClient
     {
         /// <summary>
         /// ULID of the message
