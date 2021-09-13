@@ -78,6 +78,53 @@ namespace Revolution.Client
         public delegate Task ChannelCreatedArgs(IEnumerable<IChannel> channels);
 
         /// <summary>
+        /// Represents a Channel Update Event
+        /// </summary>
+        /// <param name="channel">Partial object of the Channel that was updated</param>
+        /// <param name="clear">The object to remove (optional)</param>
+        /// <returns></returns>
+        public delegate Task ChannelUpdatedArgs(IChannel channel, string clear);
+
+        /// <summary>
+        /// Represents a Channel Delete Event
+        /// </summary>
+        /// <param name="channelId">ULID of the Channel that was deleted</param>
+        /// <returns></returns>
+        public delegate Task ChannelDeletedArgs(Ulid channelId);
+
+        /// <summary>
+        /// Represents Events that return a Channel and User Id
+        /// </summary>
+        /// <param name="channelId">Id of the Channel the Event was triggered in</param>
+        /// <param name="userId">Id of the user who instigated the action</param>
+        /// <returns></returns>
+        public delegate Task GenericChannelUserArgs(Ulid channelId, Ulid userId);
+
+        /// <summary>
+        /// Represents a Channel Acknowledge Event
+        /// </summary>
+        /// <param name="channelId">Id of the Channel that was acknowledged</param>
+        /// <param name="userId">Id of the user who instigated the action</param>
+        /// <param name="messageId">Id of the message that was acknowledged</param>
+        /// <returns></returns>
+        public delegate Task ChannelAckArgs(Ulid channelId, Ulid userId, Ulid messageId);
+
+        /// <summary>
+        /// Represents a Server Update Event
+        /// </summary>
+        /// <param name="server">Partial object of the Server that was updated</param>
+        /// <param name="clear">The object to remove (optional)</param>
+        /// <returns></returns>
+        public delegate Task ServerUpdatedArgs(Server server, string clear);
+
+        /// <summary>
+        /// Represents a Server Delete Event
+        /// </summary>
+        /// <param name="serverId">ULID of the Server that was deleted</param>
+        /// <returns></returns>
+        public delegate Task ServerDeletedArgs(Ulid serverId);
+
+        /// <summary>
         /// Represents an Event that has no payload
         /// </summary>
         /// <returns></returns>

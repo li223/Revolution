@@ -6,9 +6,11 @@ using Revolution.Objects.WebSocket.Enums;
 using Revolution.Objects.WebSocket.Response;
 using Revolution.Objects.WebSocket.Response.Channels;
 using Revolution.Objects.WebSocket.Response.Messages;
+using Revolution.Objects.WebSocket.Response.Servers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using WebSocket4Net;
@@ -26,6 +28,19 @@ namespace Revolution.Client
         public event MessageDeletedArgs MessageDeleted;
 
         public event ChannelCreatedArgs ChannelCreated;
+        public event ChannelUpdatedArgs ChannelUpdated;
+        public event ChannelDeletedArgs ChannelDeleted;
+
+        public event GenericChannelUserArgs GroupJoined;
+        public event GenericChannelUserArgs GroupLeft;
+
+        public event GenericChannelUserArgs TypingStart;
+        public event GenericChannelUserArgs TypingEnd;
+
+        public event ChannelAckArgs ChannelAcknowledged;
+
+        public event ServerUpdatedArgs ServerUpdated;
+        public event ServerDeletedArgs ServerDeleted;
 
         internal WebSocket Socket;
 
@@ -68,6 +83,21 @@ namespace Revolution.Client
         /// </summary>
         /// <param name="timestamp">An unix timestamp to associate with the request</param>
         public void Ping(ulong timestamp = 0) => this.Socket.Send($@"{{""type"": ""Ping"",""data"": {timestamp}}}");
+
+        /// <summary>
+        /// Send a typing event to the Socket
+        /// </summary>
+        /// <param name="channelId">The Channel to Send the Type event for</param>
+        /// <param name="time">How long to have the Type event go on for. Defaults to 10 Seconds</param>
+        /// <returns></returns>
+        public async Task TriggerTypingAsync(Ulid channelId, TimeSpan? time = null)
+        {
+            if (time == null) time = TimeSpan.FromSeconds(10);
+
+            this.Socket.Send($@"{{""type"": ""BeginTyping"",""channel"": {channelId}}}");
+            await Task.Delay(time.Value);
+            this.Socket.Send($@"{{""type"": ""EndTyping"",""channel"": {channelId}}}");
+        }
 
         private void Websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
@@ -151,6 +181,69 @@ namespace Revolution.Client
                     avaliableChannels.AddRange(channelCreatedPayload.Channels);
 
                     AvaliableChannels = avaliableChannels;
+                    break;
+
+                case "ChannelUpdate":
+                    var channelUpdatePayload = JsonConvert.DeserializeObject<ChannelUpdatedPayload>(e.Message);
+                    this.ChannelUpdated?.Invoke(channelUpdatePayload.Channel, channelUpdatePayload.Clear);
+
+                    var channel = AvaliableChannels.FirstOrDefault(x => x.Id == channelUpdatePayload.ChannelId);
+                    channel = channelUpdatePayload.Channel;
+                    break;
+
+                case "ChannelDelete":
+                    var channelDeletedPayload = JsonConvert.DeserializeObject<ChannelDeletedPayload>(e.Message);
+                    this.ChannelDeleted?.Invoke(channelDeletedPayload.ChannelId);
+
+                    var channelToDelete = AvaliableChannels.FirstOrDefault(x => x.Id == channelDeletedPayload.ChannelId);
+                    var channelsList = AvaliableChannels.ToList();
+
+                    channelsList.Remove(channelToDelete);
+                    AvaliableChannels = channelsList;
+                    break;
+
+                case "ChannelGroupJoin":
+                    var groupJoinPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
+                    this.GroupJoined?.Invoke(groupJoinPayload.ChannelId, groupJoinPayload.UserId);
+                    break;
+
+                case "ChannelGroupLeave":
+                    var groupLeavePayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
+                    this.GroupLeft?.Invoke(groupLeavePayload.ChannelId, groupLeavePayload.UserId);
+                    break;
+
+                case "ChannelStartTyping":
+                    var startTypingPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
+                    this.GroupLeft?.Invoke(startTypingPayload.ChannelId, startTypingPayload.UserId);
+                    break;
+
+                case "ChannelStopTyping":
+                    var endTypingPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
+                    this.GroupLeft?.Invoke(endTypingPayload.ChannelId, endTypingPayload.UserId);
+                    break;
+
+                case "ChannelAck":
+                    var channelAckPayload = JsonConvert.DeserializeObject<ChannelAckPayload>(e.Message);
+                    this.ChannelAcknowledged?.Invoke(channelAckPayload.ChannelId, channelAckPayload.UserId, channelAckPayload.MessageId);
+                    break;
+
+                case "ServerUpdate":
+                    var serverUpdatePayload = JsonConvert.DeserializeObject<ServerUpdatedPayload>(e.Message);
+                    this.ServerUpdated?.Invoke(serverUpdatePayload.Server, serverUpdatePayload.Clear);
+
+                    var server = AvaliableServers.FirstOrDefault(x => x.Id == serverUpdatePayload.ServerId);
+                    server = serverUpdatePayload.Server;
+                    break;
+
+                case "ServerDelete":
+                    var serverDeletedPayload = JsonConvert.DeserializeObject<ServerDeletedPayload>(e.Message);
+                    this.ServerDeleted?.Invoke(serverDeletedPayload.ServerId);
+
+                    var serverToDelete = AvaliableServers.FirstOrDefault(x => x.Id == serverDeletedPayload.ServerId);
+                    var serverList = AvaliableServers.ToList();
+
+                    serverList.Remove(serverToDelete);
+                    AvaliableServers = serverList;
                     break;
 
                 default:
