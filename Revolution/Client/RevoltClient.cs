@@ -7,6 +7,7 @@ using Revolution.Objects.WebSocket.Response;
 using Revolution.Objects.WebSocket.Response.Channels;
 using Revolution.Objects.WebSocket.Response.Messages;
 using Revolution.Objects.WebSocket.Response.Servers;
+using Revolution.Objects.WebSocket.Response.User;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -41,6 +42,16 @@ namespace Revolution.Client
 
         public event ServerUpdatedArgs ServerUpdated;
         public event ServerDeletedArgs ServerDeleted;
+
+        public event ServerMemberUpdatedArgs MemberUpdated;
+        public event ServerMemberJoinLeaveArgs MemberJoined;
+        public event ServerMemberJoinLeaveArgs MemberLeft;
+
+        public event ServerRoleUpdatedArgs RoleUpdated;
+        public event ServerRoleDeletedArgs RoleDeleted;
+
+        public event UserUpdatedArgs UserUpdated;
+        public event RelationshipUpdatedArgs RelationshipUpdated;
 
         internal WebSocket Socket;
 
@@ -244,6 +255,61 @@ namespace Revolution.Client
 
                     serverList.Remove(serverToDelete);
                     AvaliableServers = serverList;
+                    break;
+
+                case "ServerMemberUpdate":
+                    var serverMemberUpdatePayload = JsonConvert.DeserializeObject<ServerMemberUpdatePayload>(e.Message);
+                    this.MemberUpdated?.Invoke(serverMemberUpdatePayload.Member, serverMemberUpdatePayload.Id.ServerId);
+                    break;
+
+                case "ServerMemberJoin":
+                    var memberJoin = JsonConvert.DeserializeObject<ServerMemberJoinLeavePayload>(e.Message);
+                    this.MemberJoined?.Invoke(memberJoin.UserId, memberJoin.ServerId);
+                    break;
+
+                case "ServerMemberLeave":
+                    var memberLeave = JsonConvert.DeserializeObject<ServerMemberJoinLeavePayload>(e.Message);
+                    this.MemberLeft?.Invoke(memberLeave.UserId, memberLeave.ServerId);
+                    break;
+
+                case "ServerRoleUpdate":
+                    var roleUpdate = JsonConvert.DeserializeObject<ServerRoleUpdatePayload>(e.Message);
+                    this.RoleUpdated?.Invoke(roleUpdate.Role, roleUpdate.ServerId);
+                    break;
+
+                case "ServerRoleDelete":
+                    var roleDelete = JsonConvert.DeserializeObject<ServerRoleDeletePayload>(e.Message);
+                    this.RoleDeleted?.Invoke(roleDelete.RoleId, roleDelete.ServerId);
+                    break;
+
+                case "UserUpdate":
+                    var userUpdate = JsonConvert.DeserializeObject<UserUpdatedPayload>(e.Message);
+                    this.UserUpdated?.Invoke(userUpdate.User);
+
+                    var userToUpdate = AvaliableUsers.FirstOrDefault(x => x.Id == userUpdate.UserId);
+                    var userList = AvaliableUsers.ToList();
+
+                    userList.Remove(userToUpdate);
+                    userToUpdate = userUpdate.User;
+                    
+                    userList.Add(userToUpdate);
+                    AvaliableUsers = userList;
+
+                    break;
+
+                case "UserRelationship":
+                    var relationUpdate = JsonConvert.DeserializeObject<UserRelationshipUpdated>(e.Message);
+                    this.RelationshipUpdated?.Invoke(relationUpdate.TargetUserId, relationUpdate.Status);
+
+                    var relationToUpdate = AvaliableUsers.FirstOrDefault(x => x.Id == relationUpdate.TargetUserId);
+                    var usersList = AvaliableUsers.ToList();
+
+                    usersList.Remove(relationToUpdate);
+                    relationToUpdate.Relationship = relationUpdate.Status;
+
+                    usersList.Add(relationToUpdate);
+                    AvaliableUsers = usersList;
+
                     break;
 
                 default:
