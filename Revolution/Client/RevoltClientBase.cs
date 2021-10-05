@@ -125,12 +125,59 @@ namespace Revolution.Client
         public delegate Task ServerDeletedArgs(Ulid serverId);
 
         /// <summary>
+        /// Represents a Member Update Event
+        /// </summary>
+        /// <param name="updatedMember">Partial Member object of the Member who was updated</param>
+        /// <param name="serverId">ULID of the Server that the user was updated in</param>
+        /// <returns></returns>
+        public delegate Task ServerMemberUpdatedArgs(Member updatedMember, Ulid serverId);
+
+        /// <summary>
+        /// Represents both a Member Join and Member Leave Events
+        /// </summary>
+        /// <param name="userId">ULID of the User who Joined/Left</param>
+        /// <param name="serverId">ULID of the Server the User Joined/Left</param>
+        /// <returns></returns>
+        public delegate Task ServerMemberJoinLeaveArgs(Ulid userId, Ulid serverId);
+
+        /// <summary>
+        /// Represents a Role Update Event
+        /// </summary>
+        /// <param name="updatedRole">Role object of the Role that was updated</param>
+        /// <param name="serverId">ULID of the Server that the Role was updated in</param>
+        /// <returns></returns>
+        public delegate Task ServerRoleUpdatedArgs(Role updatedRole, Ulid serverId);
+
+        /// <summary>
+        /// Represents a Role Delete Event
+        /// </summary>
+        /// <param name="roleId">ULID of the Role that was deleted</param>
+        /// <param name="serverId">ULID of the Server that the Role was deleted in</param>
+        /// <returns></returns>
+        public delegate Task ServerRoleDeletedArgs(Ulid roleId, Ulid serverId);
+
+        /// <summary>
+        /// Represents a User Update Event
+        /// </summary>
+        /// <param name="updatedUser">Partial User object of the User who was updated</param>
+        /// <returns></returns>
+        public delegate Task UserUpdatedArgs(User updatedUser);
+
+        /// <summary>
+        /// Represents a Relationship Update Event
+        /// </summary>
+        /// <param name="userId">ULID of the User who's relationship was updated</param>
+        /// <param name="relationshipStatus">The new relationship status of the User</param>
+        /// <returns></returns>
+        public delegate Task RelationshipUpdatedArgs(Ulid userId, string relationshipStatus);
+
+        /// <summary>
         /// Represents an Event that has no payload
         /// </summary>
         /// <returns></returns>
         public delegate Task NoArgs();
         #endregion
-
+        
         public RevoltClientBase(string token)
         {
             Token = token;

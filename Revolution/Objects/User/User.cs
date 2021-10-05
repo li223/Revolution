@@ -26,7 +26,7 @@ namespace Revolution.Objects.User
         public Status Status { get; private set; }
 
         [JsonProperty("relationship")]
-        public string Relationship { get; private set; }
+        public string Relationship { get; internal set; }
 
         [JsonProperty("online")]
         public bool IsOnline { get; private set; }
