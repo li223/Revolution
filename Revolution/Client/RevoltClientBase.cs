@@ -1,4 +1,5 @@
-﻿using Revolution.Objects.Channel;
+﻿using Revolution.Client.Logging;
+using Revolution.Objects.Channel;
 using Revolution.Objects.Messaging;
 using Revolution.Objects.Server;
 using Revolution.Objects.User;
@@ -14,6 +15,12 @@ namespace Revolution.Client
         internal const string _baseUrl = "https://api.revolt.chat";
 
         public string Token { get; private set; }
+
+        private bool _useDefaultLogger { get; set; } = false;
+
+        private LogLevel _logLevel { get; set; } = LogLevel.Info;
+
+        public ILogger Logger { get; internal set; }
 
         internal RestClient Rest { get; private set; }
 
@@ -182,6 +189,7 @@ namespace Revolution.Client
         {
             Token = token;
             Rest = new RestClient(_baseUrl, token);
+            if (_useDefaultLogger) Logger = new Logger(_logLevel);
         }
 
         public RevoltClientBase(string email, string password)
@@ -189,10 +197,19 @@ namespace Revolution.Client
             Rest = new RestClient(_baseUrl, email, password);
             var sessionData = Rest.GetSessionData();
             this.Token = sessionData.Token;
+            if (_useDefaultLogger) Logger = new Logger(_logLevel);
         }
 
         public async Task<IChannel> GetChannelAsync(Ulid channelId)
             => AvaliableChannels?.FirstOrDefault(x => x.Id == channelId) 
             ?? await this.Rest.GetChannelAsync(channelId).ConfigureAwait(false);
+
+        public void UseDefaultLogger(bool useLogger = true, LogLevel logLevel = LogLevel.Info)
+        {
+            _useDefaultLogger = useLogger;
+            _logLevel = logLevel;
+        }
+
+        public void UseLoggerProvider(ILogger logger) => Logger = logger;
     }
 }

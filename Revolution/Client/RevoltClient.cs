@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using Revolution.Client.Logging;
+using Revolution.Internal;
 using Revolution.Objects.Channel;
 using Revolution.Objects.ModelActions;
 using Revolution.Objects.WebSocket;
@@ -78,6 +80,7 @@ namespace Revolution.Client
         public async Task ConnectAsync()
         {
             var data = await this.Rest.GetServerDetailsAsync();
+            this.Logger.Log("Socket URL Received", LogLevel.Debug);
             this.Socket = new WebSocket(data.WebSocketUrl);
 
             this.Socket.Closed += this.Websocket_Closed;
@@ -86,6 +89,7 @@ namespace Revolution.Client
             this.Socket.MessageReceived += this.Socket_MessageReceived;
             this.Socket.EnableAutoSendPing = true;
 
+            this.Logger.Log("Opening Socket", LogLevel.Debug);
             await this.Socket.OpenAsync();
         }
 
@@ -112,18 +116,14 @@ namespace Revolution.Client
 
         private void Websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"[LOG] WebSocket errored: {e.Exception.Message} - {DateTime.Now}");
-            Console.ForegroundColor = ConsoleColor.White;
+            this.Logger.Log($"Socket Errored: {e.Exception.Message}", LogLevel.Error);
 
             this.ClientErrored?.Invoke(e.Exception.Message);
         }
 
         private void Websocket_Opened(object sender, EventArgs e)
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"[LOG] WebSocket opened - {DateTime.Now}");
-            Console.ForegroundColor = ConsoleColor.White;
+            this.Logger.Log("Socket Opened", LogLevel.Info);
 
             this.Socket.Send(JsonConvert.SerializeObject(new Authenticate()
             {
@@ -131,12 +131,7 @@ namespace Revolution.Client
             }));
         }
 
-        private void Websocket_Closed(object sender, EventArgs e)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"[LOG] WebSocket closed - {DateTime.Now}");
-            Console.ForegroundColor = ConsoleColor.White;
-        }
+        private void Websocket_Closed(object sender, EventArgs e) => this.Logger.Log("Socket Closed", LogLevel.Error);
 
         private void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
@@ -144,47 +139,57 @@ namespace Revolution.Client
 
             switch (baseType.Type)
             {
-                case "Ready":
+                case WebSocketEventConstants.Ready:
                     var readyPayload = JsonConvert.DeserializeObject<ReadyPayload>(e.Message);
                     this.Ready?.Invoke(readyPayload.Users, readyPayload.Servers, readyPayload.Channels);
 
                     this.AvaliableUsers = readyPayload.Users;
                     this.AvaliableServers = readyPayload.Servers;
                     this.AvaliableChannels = readyPayload.Channels;
+
+                    this.Logger.Log("Ready Received", LogLevel.Debug);
                     break;
 
-                case "Pong":
+                case WebSocketEventConstants.Pong:
                     var pongPayload = JsonConvert.DeserializeObject<PongPayload>(e.Message);
                     this.Pinged?.Invoke(pongPayload.Timestamp);
+
+                    this.Logger.Log("Pong Received", LogLevel.Debug);
                     break;
 
-                case "Authenticated":
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine($"[LOG] Authenticated Event Received - {DateTime.Now}");
-                    Console.ForegroundColor = ConsoleColor.White;
+                case WebSocketEventConstants.Authenticated:
+                    this.Logger.Log("Authentication Received", LogLevel.Debug);
                     break;
 
-                case "Error":
+                case WebSocketEventConstants.Error:
                     var errorPayload = JsonConvert.DeserializeObject<ErrorPayload>(e.Message);
                     this.ClientErrored?.Invoke(typeof(ErrorType).GetProperty(errorPayload.Error).GetCustomAttribute<DescriptionAttribute>().Description);
+
+                    this.Logger.Log($"Error Received: {errorPayload.Error}", LogLevel.Error);
                     break;
 
-                case "Message":
+                case WebSocketEventConstants.Message:
                     var messagePayload = JsonConvert.DeserializeObject<MessagePayload>(e.Message);
                     this.MessageReceived?.Invoke(messagePayload.Messages);
+
+                    this.Logger.Log("Message Received", LogLevel.Debug);
                     break;
 
-                case "MessageUpdate":
+                case WebSocketEventConstants.MessageUpdated:
                     var messageUpdatePayload = JsonConvert.DeserializeObject<MessageUpdatePayload>(e.Message);
                     this.MessageUpdated?.Invoke(messageUpdatePayload.Message, messageUpdatePayload.MessageId);
+
+                    this.Logger.Log("Message Update Received", LogLevel.Debug);
                     break;
 
-                case "MessageDelete":
+                case WebSocketEventConstants.MessageDeleted:
                     var messageDeletedPayload = JsonConvert.DeserializeObject<MessageDeletedPayload>(e.Message);
                     this.MessageDeleted?.Invoke(messageDeletedPayload.MessageId, messageDeletedPayload.ChannelId);
+
+                    this.Logger.Log("Message Delete Received", LogLevel.Debug);
                     break;
 
-                case "ChannelCreate":
+                case WebSocketEventConstants.ChannelCreated:
                     var channelCreatedPayload = JsonConvert.DeserializeObject<ChannelCreatedPayload>(e.Message);
                     this.ChannelCreated?.Invoke(channelCreatedPayload.Channels);
 
@@ -192,17 +197,21 @@ namespace Revolution.Client
                     avaliableChannels.AddRange(channelCreatedPayload.Channels);
 
                     AvaliableChannels = avaliableChannels;
+
+                    this.Logger.Log("Channel Create Received", LogLevel.Debug);
                     break;
 
-                case "ChannelUpdate":
+                case WebSocketEventConstants.ChannelUpdated:
                     var channelUpdatePayload = JsonConvert.DeserializeObject<ChannelUpdatedPayload>(e.Message);
                     this.ChannelUpdated?.Invoke(channelUpdatePayload.Channel, channelUpdatePayload.Clear);
 
                     var channel = AvaliableChannels.FirstOrDefault(x => x.Id == channelUpdatePayload.ChannelId);
                     channel = channelUpdatePayload.Channel;
+
+                    this.Logger.Log("Channel Update Received", LogLevel.Debug);
                     break;
 
-                case "ChannelDelete":
+                case WebSocketEventConstants.ChannelDeleted:
                     var channelDeletedPayload = JsonConvert.DeserializeObject<ChannelDeletedPayload>(e.Message);
                     this.ChannelDeleted?.Invoke(channelDeletedPayload.ChannelId);
 
@@ -211,42 +220,56 @@ namespace Revolution.Client
 
                     channelsList.Remove(channelToDelete);
                     AvaliableChannels = channelsList;
+
+                    this.Logger.Log("Channel Delete Received", LogLevel.Debug);
                     break;
 
-                case "ChannelGroupJoin":
+                case WebSocketEventConstants.ChannelGroupJoined:
                     var groupJoinPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
                     this.GroupJoined?.Invoke(groupJoinPayload.ChannelId, groupJoinPayload.UserId);
+
+                    this.Logger.Log("Channel Group Join Received", LogLevel.Debug);
                     break;
 
-                case "ChannelGroupLeave":
+                case WebSocketEventConstants.ChannelGroupLeft:
                     var groupLeavePayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
                     this.GroupLeft?.Invoke(groupLeavePayload.ChannelId, groupLeavePayload.UserId);
+
+                    this.Logger.Log("Channel Group Left Received", LogLevel.Debug);
                     break;
 
-                case "ChannelStartTyping":
+                case WebSocketEventConstants.ChannelStartTyping:
                     var startTypingPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
                     this.GroupLeft?.Invoke(startTypingPayload.ChannelId, startTypingPayload.UserId);
+
+                    this.Logger.Log("Channel Start Typing Received", LogLevel.Debug);
                     break;
 
-                case "ChannelStopTyping":
+                case WebSocketEventConstants.ChannelStopTyping:
                     var endTypingPayload = JsonConvert.DeserializeObject<GenericChannelUserPayload>(e.Message);
                     this.GroupLeft?.Invoke(endTypingPayload.ChannelId, endTypingPayload.UserId);
+
+                    this.Logger.Log("Channel Stop Typing Received", LogLevel.Debug);
                     break;
 
-                case "ChannelAck":
+                case WebSocketEventConstants.ChannelAcked:
                     var channelAckPayload = JsonConvert.DeserializeObject<ChannelAckPayload>(e.Message);
                     this.ChannelAcknowledged?.Invoke(channelAckPayload.ChannelId, channelAckPayload.UserId, channelAckPayload.MessageId);
+
+                    this.Logger.Log("Channel Ack Received", LogLevel.Debug);
                     break;
 
-                case "ServerUpdate":
+                case WebSocketEventConstants.ServerUpdated:
                     var serverUpdatePayload = JsonConvert.DeserializeObject<ServerUpdatedPayload>(e.Message);
                     this.ServerUpdated?.Invoke(serverUpdatePayload.Server, serverUpdatePayload.Clear);
 
                     var server = AvaliableServers.FirstOrDefault(x => x.Id == serverUpdatePayload.ServerId);
                     server = serverUpdatePayload.Server;
+
+                    this.Logger.Log("Server Update Received", LogLevel.Debug);
                     break;
 
-                case "ServerDelete":
+                case WebSocketEventConstants.ServerDeleted:
                     var serverDeletedPayload = JsonConvert.DeserializeObject<ServerDeletedPayload>(e.Message);
                     this.ServerDeleted?.Invoke(serverDeletedPayload.ServerId);
 
@@ -255,34 +278,46 @@ namespace Revolution.Client
 
                     serverList.Remove(serverToDelete);
                     AvaliableServers = serverList;
+
+                    this.Logger.Log("Server Delete Received", LogLevel.Debug);
                     break;
 
-                case "ServerMemberUpdate":
+                case WebSocketEventConstants.ServerMemberUpdated:
                     var serverMemberUpdatePayload = JsonConvert.DeserializeObject<ServerMemberUpdatePayload>(e.Message);
                     this.MemberUpdated?.Invoke(serverMemberUpdatePayload.Member, serverMemberUpdatePayload.Id.ServerId);
+
+                    this.Logger.Log("Member Update Received", LogLevel.Debug);
                     break;
 
-                case "ServerMemberJoin":
+                case WebSocketEventConstants.ServerMemberJoined:
                     var memberJoin = JsonConvert.DeserializeObject<ServerMemberJoinLeavePayload>(e.Message);
                     this.MemberJoined?.Invoke(memberJoin.UserId, memberJoin.ServerId);
+
+                    this.Logger.Log("Member Join Received", LogLevel.Debug);
                     break;
 
-                case "ServerMemberLeave":
+                case WebSocketEventConstants.ServerMemberLeft:
                     var memberLeave = JsonConvert.DeserializeObject<ServerMemberJoinLeavePayload>(e.Message);
                     this.MemberLeft?.Invoke(memberLeave.UserId, memberLeave.ServerId);
+
+                    this.Logger.Log("Member Left Received", LogLevel.Debug);
                     break;
 
-                case "ServerRoleUpdate":
+                case WebSocketEventConstants.ServerRoleUpdated:
                     var roleUpdate = JsonConvert.DeserializeObject<ServerRoleUpdatePayload>(e.Message);
                     this.RoleUpdated?.Invoke(roleUpdate.Role, roleUpdate.ServerId);
+
+                    this.Logger.Log("Role Update Received", LogLevel.Debug);
                     break;
 
-                case "ServerRoleDelete":
+                case WebSocketEventConstants.ServerRoleDeleted:
                     var roleDelete = JsonConvert.DeserializeObject<ServerRoleDeletePayload>(e.Message);
                     this.RoleDeleted?.Invoke(roleDelete.RoleId, roleDelete.ServerId);
+
+                    this.Logger.Log("Role Delete Received", LogLevel.Debug);
                     break;
 
-                case "UserUpdate":
+                case WebSocketEventConstants.UserUpdated:
                     var userUpdate = JsonConvert.DeserializeObject<UserUpdatedPayload>(e.Message);
                     this.UserUpdated?.Invoke(userUpdate.User);
 
@@ -295,9 +330,10 @@ namespace Revolution.Client
                     userList.Add(userToUpdate);
                     AvaliableUsers = userList;
 
+                    this.Logger.Log("User Update Received", LogLevel.Debug);
                     break;
 
-                case "UserRelationship":
+                case WebSocketEventConstants.UserRelationship:
                     var relationUpdate = JsonConvert.DeserializeObject<UserRelationshipUpdated>(e.Message);
                     this.RelationshipUpdated?.Invoke(relationUpdate.TargetUserId, relationUpdate.Status);
 
@@ -310,12 +346,11 @@ namespace Revolution.Client
                     usersList.Add(relationToUpdate);
                     AvaliableUsers = usersList;
 
+                    this.Logger.Log("User Relationship Update Received", LogLevel.Debug);
                     break;
 
                 default:
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"[LOG] Unknown Event: {baseType.Type} - {DateTime.Now}");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    this.Logger.Log($"Unknown Event: {baseType.Type}", LogLevel.Debug);
                     break;
             }
         }
